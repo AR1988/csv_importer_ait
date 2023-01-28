@@ -9,18 +9,18 @@ import java.util.Objects;
 public class BankAcc {
 
     private static Long idCounter = 0L;
-
+//50010094569875
     private final Long id;
     private Long kontoNr;
-    private Long blz;
+    private Long bankId;
     private Double balance;
     private Long orderId;
     private Long userId;
     private Type typeEnum;
 
-    public BankAcc(Long kontoNr, Long blz, Double balance, Long orderId, Type typeEnum) {
+    public BankAcc(Long kontoNr, Long bankId, Double balance, Long orderId, Type typeEnum) {
         this.kontoNr = kontoNr;
-        this.blz = blz;
+        this.bankId = bankId;
         this.balance = balance;
         this.orderId = orderId;
         this.typeEnum = typeEnum;
@@ -41,12 +41,12 @@ public class BankAcc {
         this.kontoNr = kontoNr;
     }
 
-    public Long getBlz() {
-        return blz;
+    public Long getBankId() {
+        return bankId;
     }
 
-    public void setBlz(Long blz) {
-        this.blz = blz;
+    public void setBankId(Long bankId) {
+        this.bankId = bankId;
     }
 
     public Double getBalance() {
@@ -91,7 +91,7 @@ public class BankAcc {
 
     @Override
     public int hashCode() {
-        return Objects.hash(kontoNr, blz, balance, orderId, userId);
+        return Objects.hash(kontoNr, bankId, balance, orderId, userId);
     }
 
     @Override
@@ -99,7 +99,7 @@ public class BankAcc {
         return "BankAcc{" +
                 "id=" + id +
                 ", kontoNr=" + kontoNr +
-                ", blz=" + blz +
+                ", blz=" + bankId +
                 ", balance=" + balance +
                 ", orderId=" + orderId +
                 ", userId=" + userId +

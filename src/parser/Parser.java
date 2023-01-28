@@ -64,6 +64,7 @@ public class Parser {
     }
 
     public static Type parseTypeEnum(String code, boolean require, ArrayList<String> errors) {
+        //TODO удалить если не нужен
         if (code == null) {
             errors.add("Value code is null");
             return null;
@@ -88,6 +89,7 @@ public class Parser {
 
     private static boolean checkRequire(String value, boolean require, ArrayList<String> errors) {
         if (require) {
+//            if (value == null || value.length() > 0) {
             if (value.isBlank()) {
                 errors.add("Value " + value + "is not allowed");
                 return false;

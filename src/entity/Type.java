@@ -22,4 +22,6 @@ public enum Type {
     public int getId() {
         return id;
     }
+
+    //TODO метод для поиска соответствий
 }
