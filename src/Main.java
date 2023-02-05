@@ -1,18 +1,16 @@
 import db.MockDb;
 import entity.BankAcc;
 import entity.Order;
-import entity.Type;
 import entity.User;
-import parser.Parser;
+import mapper.BankAccMapper;
+import mapper.UserMapper;
+import model.CsvRowModel;
 import reader.CsvReader;
 import service.BankAkkService;
 import service.OrderService;
 import service.UserService;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Andrej Reutow
@@ -32,75 +30,54 @@ public class Main {
     public static void main(String[] args) {
 //        ArrayList<String> file = CsvReader.readFile();
         List<List<String>> files = CsvReader.readFiles();
+
+        String fileName = "File";
         for (List<String> file : files) {
-            Order order = null;
-            for (int lineNumber = 1; lineNumber < file.size() + 1; lineNumber++) {
-                String[] split = file.get(lineNumber - 1).split(";");
+            Order order = new Order();
+            orderService.save(order);
+            List<CsvRowModel> csvRowsModels = new LinkedList<>();
+            for (int rowNumber = 1; rowNumber < file.size() + 1; rowNumber++) {
+                String[] columnsOfRowAsArray = file.get(rowNumber - 1).split(";");
+//                List<String> columnsOfRow = List.of(columnsOfRowAsArray);
+                List<String> columnsOfRow = Arrays.asList(columnsOfRowAsArray);
                 ArrayList<String> errors = new ArrayList<>();
-
-                if (split.length != KONTO_LENGTH) {
-                    errors.add("Line: " + lineNumber + ". Error: Number of columns is not correct");
+                if (columnsOfRow.size() != KONTO_LENGTH) {
+                    errors.add("Line: " + rowNumber + ". Error: Number of columns is not correct");
                 }
-//            if (errors.size() > 0) {
+                CsvRowModel rowModel = new CsvRowModel(columnsOfRow, errors, rowNumber);
+                csvRowsModels.add(rowModel);
                 if (!errors.isEmpty()) {
-                    printErrors(errors);
-                    continue;
-                }
-                //User
-                String name = split[0];
-                String lastName = split[1];
-                String address = split[2];
-                String cityCode = split[3];
-                String phoneNr = split[4];
-                //BankAcc
-                String iban = split[5];
-                String balance = split[6];
-                String typeCode = split[7];  // C | D
-
-                String userName = Parser.parseToString(name, true, errors);
-                String userLastName = Parser.parseToString(lastName, true, errors);
-                String userAddress = Parser.parseToString(address, true, errors);
-                Integer userCityCode = Parser.parseToInt(cityCode, true, errors);
-                Long userPhoneNr = Parser.parseToLong(phoneNr, true, errors);
-
-                //todo fix it
-                Long bankAccIban = Parser.parseToLong(iban, true, errors);
-                Double bankAccBalance = Parser.parseToDouble(balance, true, errors);
-                Type bankAccType = Parser.parseTypeEnum(typeCode, true, errors);
-
-                if (!errors.isEmpty()) {
-                    printErrors(errors);
                     continue;
                 }
                 //todo fix it
-                Map<String, Long> kontoDetails = getKontoDetails(bankAccIban, errors, lineNumber);
+                Map<String, Long> kontoDetails = getKontoDetails(rowModel);
                 if (!errors.isEmpty() || kontoDetails == null) {
-                    printErrors(errors);
                     continue;
-                }
-
-                if (order == null) {
-                    order = new Order();
                 }
                 Long kontoNr = kontoDetails.get(KONTO_NR_KEY);
                 Long bankId = kontoDetails.get(BANK_ID_KEY);
-                BankAcc bankAcc = new BankAcc(kontoNr, bankId, bankAccBalance, order.getId(), bankAccType);
-                User user = new User(userName, userLastName, userAddress, userCityCode, userPhoneNr, order.getId());
+                BankAcc bankAcc = BankAccMapper.mapFromCsvModelToBankAcc(rowModel, kontoNr, bankId, order);
+                User user = UserMapper.mapFromCsvModelToUser(rowModel, order);
                 user.setBankAccId(bankAcc.getId());
                 bankAcc.setUserId(user.getId());
 
                 bankAkkService.save(bankAcc);
                 userService.save(user);
             }
-            orderService.save(order);
+            System.out.println("File " + fileName + "_" + order.getId());
+            for (CsvRowModel csvRowsModel : csvRowsModels) {
+                System.out.println(csvRowsModel.printReportMessage());
+            }
         }
     }
 
-    private static Map<String, Long> getKontoDetails(Long iban, List<String> errors, int lineNr) {
-//      iban =  50010094569875
-        String ibanAsString = String.valueOf(iban);
+    private static Map<String, Long> getKontoDetails(CsvRowModel rowModel) {
+        //      iban =  50010094569875
+        String ibanAsString = String.valueOf(rowModel.getIban());
         if (ibanAsString.length() != IBAN_LENGTH) {
-            errors.add("LineNr: " + lineNr + ". Iban length is not allowed. Expected length: " + IBAN_LENGTH + ", Actually Length: " + ibanAsString.length());
+            List<String> errors = rowModel.getErrors();
+            errors.add("LineNr: " + rowModel.getRowNumber() + ". Iban length is not allowed. Expected length: "
+                    + IBAN_LENGTH + ", Actually Length: " + ibanAsString.length());
             return null;
         }
         //      ibanAsString =  "50010094569875"
@@ -128,7 +105,7 @@ public class Main {
 }
 
 
-//0	FirtName	User
+//0	FirstName	User
 //1	LastName	User
 //2	Address	User
 //3	INDEX	User
