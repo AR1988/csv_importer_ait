@@ -3,15 +3,17 @@ package service;
 import db.MockDb;
 import entity.BankAcc;
 
+import java.util.List;
+
 /**
  * @author Andrej Reutow
  * created on 28.01.2023
  */
-public class BankAkkService implements IService<BankAcc> {
+public class BankAccService implements IService<BankAcc> {
 
     private MockDb db;
 
-    public BankAkkService(MockDb db) {
+    public BankAccService(MockDb db) {
         this.db = db;
     }
 
@@ -23,5 +25,10 @@ public class BankAkkService implements IService<BankAcc> {
     @Override
     public BankAcc get(long id) {
         return db.getBankAcc(id);
+    }
+
+    @Override
+    public List<BankAcc> getAll() {
+        return db.getBankAccs();
     }
 }

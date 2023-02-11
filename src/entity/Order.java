@@ -12,9 +12,12 @@ public class Order {
 
     private Long id;
 
+    private OrderStatus orderStatus;
+
     public Order() {
         idCounter += 1;
         this.id = idCounter;
+        this.orderStatus = OrderStatus.CREATED;
     }
 
     public Long getId() {
@@ -23,6 +26,22 @@ public class Order {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public static Long getIdCounter() {
+        return idCounter;
+    }
+
+    public static void setIdCounter(Long idCounter) {
+        Order.idCounter = idCounter;
+    }
+
+    public OrderStatus getOrderStatus() {
+        return orderStatus;
+    }
+
+    public void setOrderStatus(OrderStatus orderStatus) {
+        this.orderStatus = orderStatus;
     }
 
     @Override

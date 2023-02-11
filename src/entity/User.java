@@ -1,5 +1,7 @@
 package entity;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -8,85 +10,96 @@ import java.util.Objects;
  */
 public class User {
     private static Long idCounter = 0L;
-
     private final Long id;
     private String firstName;
     private String lastName;
     private String address;
     private Integer cityCode;
+    private final List<BankAcc> bankAccList = new ArrayList<>();
     private Long phoneNr;
-    private Long orderId;
-    private Long bankAccId;
+    private Order order;
 
-    public User(String firstName, String lastName, String address, Integer cityCode, Long phoneNr, Long orderId) {
+    public User(String firstName, String lastName, String address, Integer cityCode, Long phoneNr, Order order) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.address = address;
         this.cityCode = cityCode;
         this.phoneNr = phoneNr;
-        this.orderId = orderId;
+        this.order = order;
         idCounter += 1;
         this.id = idCounter;
+    }
+
+    public void addBankAcc(BankAcc bankAcc) {
+        this.bankAccList.add(bankAcc);
+    }
+
+    public List<BankAcc> getBankAccList() {
+        return bankAccList;
     }
 
     public Long getId() {
         return id;
     }
 
+    @SuppressWarnings("unused")
     public String getFirstName() {
         return firstName;
     }
 
+    @SuppressWarnings("unused")
     public void setFirstName(String firstName) {
         this.firstName = firstName;
     }
 
+    @SuppressWarnings("unused")
     public String getLastName() {
         return lastName;
     }
 
+    @SuppressWarnings("unused")
     public void setLastName(String lastName) {
         this.lastName = lastName;
     }
 
+    @SuppressWarnings("unused")
     public String getAddress() {
         return address;
     }
 
+    @SuppressWarnings("unused")
     public void setAddress(String address) {
         this.address = address;
     }
 
+    @SuppressWarnings("unused")
     public Integer getCityCode() {
         return cityCode;
     }
 
+    @SuppressWarnings("unused")
     public void setCityCode(Integer cityCode) {
         this.cityCode = cityCode;
     }
 
+    @SuppressWarnings("unused")
     public Long getPhoneNr() {
         return phoneNr;
     }
 
+    @SuppressWarnings("unused")
     public void setPhoneNr(Long phoneNr) {
         this.phoneNr = phoneNr;
     }
 
-    public Long getOrderId() {
-        return orderId;
+    @SuppressWarnings("unused")
+    public Order getOrder() {
+        return order;
     }
 
-    public void setOrderId(Long orderId) {
-        this.orderId = orderId;
-    }
-
-    public Long getBankAccId() {
-        return bankAccId;
-    }
-
-    public void setBankAccId(Long bankAccId) {
-        this.bankAccId = bankAccId;
+    @SuppressWarnings("unused")
+    public void setOrder(Order order) {
+        this.order = order;
     }
 
     @Override
@@ -99,7 +112,7 @@ public class User {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, firstName, lastName, address, cityCode, phoneNr, orderId, bankAccId);
+        return Objects.hash(id, firstName, lastName, address, cityCode, phoneNr, order, bankAccList);
     }
 
     @Override
@@ -111,8 +124,7 @@ public class User {
                 ", address='" + address + '\'' +
                 ", cityCode=" + cityCode +
                 ", phoneNr=" + phoneNr +
-                ", orderId=" + orderId +
-                ", bankAccId=" + bankAccId +
+                ", orderId=" + order +
                 '}';
     }
 }

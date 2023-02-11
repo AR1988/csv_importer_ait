@@ -1,12 +1,13 @@
 import db.MockDb;
 import entity.BankAcc;
 import entity.Order;
+import entity.OrderStatus;
 import entity.User;
 import mapper.BankAccMapper;
 import mapper.UserMapper;
 import model.CsvRowModel;
 import reader.CsvReader;
-import service.BankAkkService;
+import service.BankAccService;
 import service.OrderService;
 import service.UserService;
 
@@ -23,7 +24,7 @@ public class Main {
     private static final int KONTO_LENGTH = 8;
 
     static MockDb mockDb = new MockDb();
-    static BankAkkService bankAkkService = new BankAkkService(mockDb);
+    static BankAccService bankAccService = new BankAccService(mockDb);
     static OrderService orderService = new OrderService(mockDb);
     static UserService userService = new UserService(mockDb);
 
@@ -42,33 +43,54 @@ public class Main {
                 List<String> columnsOfRow = Arrays.asList(columnsOfRowAsArray);
                 ArrayList<String> errors = new ArrayList<>();
                 if (columnsOfRow.size() != KONTO_LENGTH) {
+                    order.setOrderStatus(OrderStatus.INVALID);
                     errors.add("Line: " + rowNumber + ". Error: Number of columns is not correct");
+                    continue;
                 }
                 CsvRowModel rowModel = new CsvRowModel(columnsOfRow, errors, rowNumber);
                 csvRowsModels.add(rowModel);
                 if (!errors.isEmpty()) {
+                    order.setOrderStatus(OrderStatus.INVALID);
                     continue;
                 }
                 //todo fix it
                 Map<String, Long> kontoDetails = getKontoDetails(rowModel);
                 if (!errors.isEmpty() || kontoDetails == null) {
+                    order.setOrderStatus(OrderStatus.INVALID);
                     continue;
                 }
                 Long kontoNr = kontoDetails.get(KONTO_NR_KEY);
                 Long bankId = kontoDetails.get(BANK_ID_KEY);
-                BankAcc bankAcc = BankAccMapper.mapFromCsvModelToBankAcc(rowModel, kontoNr, bankId, order);
                 User user = UserMapper.mapFromCsvModelToUser(rowModel, order);
-                user.setBankAccId(bankAcc.getId());
-                bankAcc.setUserId(user.getId());
-
-                bankAkkService.save(bankAcc);
+                BankAcc bankAcc = BankAccMapper.mapFromCsvModelToBankAcc(rowModel, user, kontoNr, bankId, order);
+                user.addBankAcc(bankAcc);
+                order.setOrderStatus(OrderStatus.VALID);
+                bankAccService.save(bankAcc);
                 userService.save(user);
             }
-            System.out.println("File " + fileName + "_" + order.getId());
-            for (CsvRowModel csvRowsModel : csvRowsModels) {
-                System.out.println(csvRowsModel.printReportMessage());
+//            System.out.println("File " + fileName + "_" + order.getId());
+//            for (CsvRowModel csvRowsModel : csvRowsModels) {
+//                System.out.println(csvRowsModel.printReportMessage());
+//            }
+        }
+
+        //get all and print Orders
+        List<Order> allOrders = getAllOrders();
+        for (Order order : allOrders) {
+            Map<Order, List<User>> orderListMap = userService.groupAllByOrder(order);
+            System.out.printf("Order id '%d' \n", order.getId());
+            List<User> userListByOrder = orderListMap.get(order);
+            for (User user : userListByOrder) {
+                List<BankAcc> bankAccList = user.getBankAccList();
+                for (BankAcc bankAcc : bankAccList) {
+                    System.out.printf("User %s -> %s \n", user.getFirstName(), bankAcc);
+                }
             }
         }
+    }
+
+    private static List<Order> getAllOrders() {
+        return orderService.getAll();
     }
 
     private static Map<String, Long> getKontoDetails(CsvRowModel rowModel) {

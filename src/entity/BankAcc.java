@@ -1,7 +1,6 @@
 package entity;
 
 import java.util.Objects;
-
 /**
  * @author Andrej Reutow
  * created on 21.01.2023
@@ -9,25 +8,29 @@ import java.util.Objects;
 public class BankAcc {
 
     private static Long idCounter = 0L;
-//50010094569875
+    //50010094569875
     private final Long id;
     private Long kontoNr;
     private Long bankId;
     private Double balance;
-    private Long orderId;
-    private Long userId;
+    private Order order;
+    private User user;
     private Type typeEnum;
 
-    public BankAcc(Long kontoNr, Long bankId, Double balance, Long orderId, Type typeEnum) {
+    public BankAcc(Long kontoNr, Long bankId, Double balance, Order order, User user, Type typeEnum) {
         this.kontoNr = kontoNr;
         this.bankId = bankId;
         this.balance = balance;
-        this.orderId = orderId;
+        this.order = order;
+        this.user = user;
         this.typeEnum = typeEnum;
         idCounter += 1;
         this.id = idCounter;
     }
 
+    public static Long getIdCounter() {
+        return idCounter;
+    }
 
     public Long getId() {
         return id;
@@ -57,20 +60,20 @@ public class BankAcc {
         this.balance = balance;
     }
 
-    public Long getOrderId() {
-        return orderId;
+    public Order getOrder() {
+        return order;
     }
 
-    public void setOrderId(Long orderId) {
-        this.orderId = orderId;
+    public void setOrder(Order order) {
+        this.order = order;
     }
 
-    public Long getUserId() {
-        return userId;
+    public User getUser() {
+        return user;
     }
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public void setUser(User user) {
+        this.user = user;
     }
 
     public Type getTypeEnum() {
@@ -91,7 +94,7 @@ public class BankAcc {
 
     @Override
     public int hashCode() {
-        return Objects.hash(kontoNr, bankId, balance, orderId, userId);
+        return Objects.hash(kontoNr, bankId, balance, order, user);
     }
 
     @Override
@@ -101,8 +104,7 @@ public class BankAcc {
                 ", kontoNr=" + kontoNr +
                 ", blz=" + bankId +
                 ", balance=" + balance +
-                ", orderId=" + orderId +
-                ", userId=" + userId +
+                ", order=" + order +
                 ", typeEnum=" + typeEnum +
                 '}';
     }

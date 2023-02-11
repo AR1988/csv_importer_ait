@@ -2,6 +2,7 @@ package mapper;
 
 import entity.BankAcc;
 import entity.Order;
+import entity.User;
 import model.CsvRowModel;
 
 /**
@@ -10,7 +11,7 @@ import model.CsvRowModel;
  */
 public class BankAccMapper {
 
-    public static BankAcc mapFromCsvModelToBankAcc(CsvRowModel rowModel, Long kontoNr, Long bankId, Order order) {
-        return new BankAcc(kontoNr, bankId, rowModel.getBalance(), order.getId(), rowModel.getTypeCode());
+    public static BankAcc mapFromCsvModelToBankAcc(CsvRowModel rowModel, User user, Long kontoNr, Long bankId, Order order) {
+        return new BankAcc(kontoNr, bankId, rowModel.getBalance(), order, user, rowModel.getTypeCode());
     }
 }

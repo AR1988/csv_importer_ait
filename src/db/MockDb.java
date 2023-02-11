@@ -32,6 +32,18 @@ public class MockDb implements IMockDb {
         this.bankAccs.add(bankAcc);
     }
 
+    public List<User> getUsers() {
+        return users;
+    }
+
+    public List<Order> getOrders() {
+        return orders;
+    }
+
+    public List<BankAcc> getBankAccs() {
+        return bankAccs;
+    }
+
     @Override
     public User getUser(long id) {
         for (User user : this.users) {
