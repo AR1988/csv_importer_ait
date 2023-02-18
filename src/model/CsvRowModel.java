@@ -3,7 +3,10 @@ package model;
 import entity.Type;
 import parser.Parser;
 
+import java.util.Collections;
 import java.util.List;
+
+import static model.CsvColumnEnum.*;
 
 /**
  * @author Andrej Reutow
@@ -29,15 +32,21 @@ public class CsvRowModel {
         init();
     }
 
+    public CsvRowModel(List<String> errors, int rowNumber) {
+        this.errors = errors;
+        this.rowNumber = rowNumber;
+        this.columnsOfRow = Collections.emptyList();
+    }
+
     public void init() {
-        name = Parser.parseToString(columnsOfRow.get(0), true, errors);
-        lastName = Parser.parseToString(columnsOfRow.get(1), false, errors);
-        address = Parser.parseToString(columnsOfRow.get(2), true, errors);
-        cityCode = Parser.parseToInt(columnsOfRow.get(3), true, errors);
-        phoneNr = Parser.parseToLong(columnsOfRow.get(4), false, errors);
-        iban = Parser.parseToLong(columnsOfRow.get(5), true, errors);
-        balance = Parser.parseToDouble(columnsOfRow.get(6), true, errors);
-        typeCode = Parser.parseTypeEnum(columnsOfRow.get(7), true, errors);
+        name = Parser.parseToString(columnsOfRow.get(FIRST_NAME.getColumnIndex()), FIRST_NAME.getColumnName(), true, errors);
+        lastName = Parser.parseToString(columnsOfRow.get(LAST_NAME.getColumnIndex()), LAST_NAME.getColumnName(), false, errors);
+        address = Parser.parseToString(columnsOfRow.get(ADDRESS.getColumnIndex()), ADDRESS.getColumnName(), true, errors);
+        cityCode = Parser.parseToInt(columnsOfRow.get(INDEX.getColumnIndex()), INDEX.getColumnName(), true, errors);
+        phoneNr = Parser.parseToLong(columnsOfRow.get(TEL.getColumnIndex()), TEL.getColumnName(), false, errors);
+        iban = Parser.parseToLong(columnsOfRow.get(IBAN.getColumnIndex()), IBAN.getColumnName(), true, errors);
+        balance = Parser.parseToDouble(columnsOfRow.get(BALANCE.getColumnIndex()), BALANCE.getColumnName(), true, errors);
+        typeCode = Parser.parseTypeEnum(columnsOfRow.get(TYPE_CODE.getColumnIndex()), TYPE_CODE.getColumnName(), true, errors);
     }
 
     public String printReportMessage() {
@@ -49,20 +58,11 @@ public class CsvRowModel {
             //errors -> ["Parse Error", "some error"]
             for (int i = 0; i < errors.size(); i++) {
                 String error = errors.get(i);
-//                builder.append("Строка: ");
-//                builder.append(rowNumber);
-//                builder.append(", Ошибка ");
-//                builder.append(i + 1);
-//                builder.append(": ");
-//                builder.append(error);
-//                builder.append("\n");
                 builder.append("Строка: ").append(rowNumber).append(", Ошибка ").append(i + 1).append(": ").append(error);
                 if (i < errors.size() - 1) {
                     builder.append("\n");
                 }
             }
-            //Строка: 1, Error 1: Parse Error
-            //Строка: 1, Error 2: some error
             return builder.toString();
         }
     }
