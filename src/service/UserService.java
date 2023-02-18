@@ -5,10 +5,7 @@ import entity.Order;
 import entity.OrderStatus;
 import entity.User;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Andrej Reutow
@@ -56,19 +53,48 @@ public class UserService implements IService<User> {
         return orderMap;
     }
 
-    public Map<Order, List<User>> groupAllByOrder() {
+    public Map<Order, List<User>> groupAllByOrder(OrderStatus status) {
         Map<Order, List<User>> orderMap = new HashMap<>();
         //todo сгруппировать список user в HashMap по всем доступным Order.
         // Статус Order (OrderStatus) должен быть строго только OrderStatus.VALID
+        List<User> users = getAll();
+        for (User user : users) {
+            Order order = user.getOrder();
+            OrderStatus orderStatus = order.getOrderStatus();
+            if (null != status && status.equals(orderStatus)) {
+                List<User> userList = orderMap.getOrDefault(order, new ArrayList<>());
+                userList.add(user);
+                orderMap.put(order, userList);
+            }
+        }
         return orderMap;
     }
 
-//    public Map<Order, List<User>> groupAllByOrder() {
+//    public Map<Order, List<User>> groupOrderStatus() {
 //        Map<Order, List<User>> orderMap = new HashMap<>();
-//
-//        Map<OrderStatus, Map<Order, List<User>>> statusMap = new HashMap<>();
-//        todo сгруппировать список user в HashMap по всем доступным Order.
-//         Статус Order (OrderStatus) должен быть строго только OrderStatus.INVALID
+//        //todo сгруппировать список user в HashMap по всем доступным Order.
+//        // Статус Order (OrderStatus) должен быть строго только OrderStatus.VALID
+//        List<User> users = getAll();
+//        for (User user : users) {
+//            Order order = user.getOrder();
+//            List<User> userList = orderMap.getOrDefault(order, new ArrayList<>());
+//            userList.add(user);
+//            orderMap.put(order, userList);
+//        }
 //        return orderMap;
 //    }
+
+
+    public Map<OrderStatus, Map<Order, List<User>>> groupAllByOrderStatus() {
+        Map<OrderStatus, Map<Order, List<User>>> statusMap = new HashMap<>();
+//        todo сгруппировать список user в HashMap по всем доступным Order.
+//        Статус Order (OrderStatus) должен быть строго только OrderStatus.INVALID
+        List<OrderStatus> orderStatusList = Arrays.asList(OrderStatus.values());
+
+        for (OrderStatus orderStatus : orderStatusList) {
+            Map<Order, List<User>> orderMap = groupAllByOrder(orderStatus);
+            statusMap.put(orderStatus, orderMap);
+        }
+        return statusMap;
+    }
 }

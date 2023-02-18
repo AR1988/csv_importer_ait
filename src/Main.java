@@ -3,15 +3,21 @@ import entity.BankAcc;
 import entity.Order;
 import entity.OrderStatus;
 import entity.User;
+import file_helper.FileHelper;
 import mapper.BankAccMapper;
 import mapper.UserMapper;
 import model.CsvRowModel;
-import reader.CsvReader;
+import parser.Parser;
 import service.BankAccService;
 import service.OrderService;
 import service.UserService;
 
+import java.io.File;
 import java.util.*;
+
+import static entity.OrderStatus.INVALID;
+import static entity.OrderStatus.VALID;
+import static model.CsvColumnEnum.IBAN;
 
 /**
  * @author Andrej Reutow
@@ -21,7 +27,7 @@ public class Main {
     private static final int IBAN_LENGTH = 14;
     private static final String KONTO_NR_KEY = "KontoNr";
     private static final String BANK_ID_KEY = "BankId";
-    private static final int KONTO_LENGTH = 8;
+    private static final int COLUMN_LENGTH = 8;
 
     static MockDb mockDb = new MockDb();
     static BankAccService bankAccService = new BankAccService(mockDb);
@@ -29,34 +35,53 @@ public class Main {
     static UserService userService = new UserService(mockDb);
 
     public static void main(String[] args) {
-//        ArrayList<String> file = CsvReader.readFile();
-        List<List<String>> files = CsvReader.readFiles();
+        startImport();
+    }
 
-        String fileName = "File";
-        for (List<String> file : files) {
+    private static File printReport(List<CsvRowModel> csvRowsModels, File file) {
+        List<String> reportList = new ArrayList<>();
+        for (CsvRowModel csvRowsModel : csvRowsModels) {
+            System.out.println(csvRowsModel.printReportMessage());
+            reportList.add(csvRowsModel.printReportMessage());
+            return FileHelper.writeToFile(reportList, file.getName());
+        }
+        return null;
+    }
+
+    private static void startImport() {
+        File[] files = FileHelper.detectFiles();
+        for (File file : files) {
+            List<String> strings = FileHelper.readFile(file);
             Order order = new Order();
             orderService.save(order);
-            List<CsvRowModel> csvRowsModels = new LinkedList<>();
-            for (int rowNumber = 1; rowNumber < file.size() + 1; rowNumber++) {
-                String[] columnsOfRowAsArray = file.get(rowNumber - 1).split(";");
-//                List<String> columnsOfRow = List.of(columnsOfRowAsArray);
+            List<CsvRowModel> csvRowModels = importFile(strings, order);
+            File report = printReport(csvRowModels, file);
+            FileHelper.moveFile(file);
+            FileHelper.moveFile(report);
+        }
+    }
+
+    private static List<CsvRowModel> importFile(List<String> strings, Order order) {
+        List<CsvRowModel> csvRowsModels = new ArrayList<>();
+        List<User> successfulSavedUsers = new ArrayList<>();
+        for (int rowNumber = 1; rowNumber < strings.size() + 1; rowNumber++) {
+            ArrayList<String> errors = new ArrayList<>();
+            try {
+                String[] columnsOfRowAsArray = strings.get(rowNumber - 1).split(";");
                 List<String> columnsOfRow = Arrays.asList(columnsOfRowAsArray);
-                ArrayList<String> errors = new ArrayList<>();
-                if (columnsOfRow.size() != KONTO_LENGTH) {
-                    order.setOrderStatus(OrderStatus.INVALID);
-                    errors.add("Line: " + rowNumber + ". Error: Number of columns is not correct");
+                if (columnsOfRow.size() != COLUMN_LENGTH) {
+                    errors.add("Error: Number of columns is not correct");
+                    CsvRowModel rowModel = new CsvRowModel(errors, rowNumber);
+                    csvRowsModels.add(rowModel);
                     continue;
                 }
                 CsvRowModel rowModel = new CsvRowModel(columnsOfRow, errors, rowNumber);
                 csvRowsModels.add(rowModel);
                 if (!errors.isEmpty()) {
-                    order.setOrderStatus(OrderStatus.INVALID);
                     continue;
                 }
-                //todo fix it
                 Map<String, Long> kontoDetails = getKontoDetails(rowModel);
                 if (!errors.isEmpty() || kontoDetails == null) {
-                    order.setOrderStatus(OrderStatus.INVALID);
                     continue;
                 }
                 Long kontoNr = kontoDetails.get(KONTO_NR_KEY);
@@ -64,33 +89,34 @@ public class Main {
                 User user = UserMapper.mapFromCsvModelToUser(rowModel, order);
                 BankAcc bankAcc = BankAccMapper.mapFromCsvModelToBankAcc(rowModel, user, kontoNr, bankId, order);
                 user.addBankAcc(bankAcc);
-                order.setOrderStatus(OrderStatus.VALID);
+
                 bankAccService.save(bankAcc);
                 userService.save(user);
-            }
-//            System.out.println("File " + fileName + "_" + order.getId());
-//            for (CsvRowModel csvRowsModel : csvRowsModels) {
-//                System.out.println(csvRowsModel.printReportMessage());
-//            }
-        }
-
-        //get all and print Orders
-        List<Order> allOrders = getAllOrders();
-        for (Order order : allOrders) {
-            Map<Order, List<User>> orderListMap = userService.groupAllByOrder(order);
-            System.out.printf("Order id '%d' \n", order.getId());
-            List<User> userListByOrder = orderListMap.get(order);
-            for (User user : userListByOrder) {
-                List<BankAcc> bankAccList = user.getBankAccList();
-                for (BankAcc bankAcc : bankAccList) {
-                    System.out.printf("User %s -> %s \n", user.getFirstName(), bankAcc);
-                }
+                successfulSavedUsers.add(user);
+            } catch (Exception e) {
+                handleUnexpectedException(csvRowsModels, rowNumber, errors);
             }
         }
+        OrderStatus status = successfulSavedUsers.size() == csvRowsModels.size() ? VALID : INVALID;
+        order.setOrderStatus(status);
+        return csvRowsModels;
     }
 
-    private static List<Order> getAllOrders() {
-        return orderService.getAll();
+    private static void handleUnexpectedException(List<CsvRowModel> csvRowsModels, int rowNumber, ArrayList<String> errors) {
+        String msg = "Unexpected error";
+        boolean isFound = false;
+        for (CsvRowModel csvRowsModel : csvRowsModels) {
+            if (csvRowsModel.getRowNumber() == rowNumber) {
+                csvRowsModel.getErrors().add(msg);
+                isFound = true;
+                break;
+            }
+        }
+        if (!isFound) {
+            errors.add(msg);
+            CsvRowModel rowModel = new CsvRowModel(errors, rowNumber);
+            csvRowsModels.add(rowModel);
+        }
     }
 
     private static Map<String, Long> getKontoDetails(CsvRowModel rowModel) {
@@ -98,19 +124,17 @@ public class Main {
         String ibanAsString = String.valueOf(rowModel.getIban());
         if (ibanAsString.length() != IBAN_LENGTH) {
             List<String> errors = rowModel.getErrors();
-            errors.add("LineNr: " + rowModel.getRowNumber() + ". Iban length is not allowed. Expected length: "
-                    + IBAN_LENGTH + ", Actually Length: " + ibanAsString.length());
+            errors.add(Parser.getErrorHeader(IBAN.getColumnName()) + "Iban length is not allowed. Expected length: " + IBAN_LENGTH + ", Actually Length: " + ibanAsString.length());
             return null;
         }
         //      ibanAsString =  "50010094569875"
-        String kontoNrAsString = ibanAsString.substring(0, KONTO_LENGTH);
+        String kontoNrAsString = ibanAsString.substring(0, 8);
         //      ibanAsString    =  "50010094569875"
         //      kontoNrAsString =  "50010094"
-        String bankIdAsString = ibanAsString.substring(KONTO_LENGTH);
+        String bankIdAsString = ibanAsString.substring(8);
         //      ibanAsString    =  "50010094569875"
         //      kontoNrAsString =  "50010094"
         //      bankIdAsString =  "569875"
-
         Long kontoNr = Long.parseLong(kontoNrAsString);
         Long banId = Long.parseLong(bankIdAsString);
         //     long kontoNr =  50010094
@@ -120,19 +144,4 @@ public class Main {
         result.put(BANK_ID_KEY, banId);
         return result;
     }
-
-    private static void printErrors(ArrayList<String> errors) {
-        System.out.println(errors);
-    }
 }
-
-
-//0	FirstName	User
-//1	LastName	User
-//2	Address	User
-//3	INDEX	User
-//4	TEL	User
-
-//5	IBAN	BankAcc
-//6	Balance	BankAcc
-//7	CREDIT	Tspe        C
